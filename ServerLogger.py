@@ -62,18 +62,7 @@ class ServerLogger:
 
         plJoin:list[str] = list[str]() 
         plLeft:list[str] = list[str]() 
-        currentIds:set[int] = set()
-
-        for player in players:
-            currentIds.add(player.id)
-            if player.id not in self.cachedIds:
-                plJoin.append(str(player))
-                gFavoritePlayers.UpdateOnlineStatus(self.Name, player.name, player.id, True)
-
-            if player.id >= self.lastId and player.id not in self.Players:
-                pd = PlayerData(player.name, player.id, player.ping)
-                pd.loginTimeUtc = datetime.now(timezone.utc)
-                self.Players[player.id] = pd
+        currentIds:set[int] = {player.id for player in players}
 
         exitPlayers = self.cachedIds - currentIds
         for playerId in exitPlayers:
@@ -86,10 +75,20 @@ class ServerLogger:
             else:
                 logging.warning(f"{self.Name} playerId {playerId} not found in Players list, but was in cachedIds, #TODO")
 
-        if (len(plJoin) > 0):
-            self.logger.info(f"{len(players):03}::+ " + ', '.join(plJoin))
+        for player in players:
+            if player.id not in self.cachedIds:
+                plJoin.append(str(player))
+                gFavoritePlayers.UpdateOnlineStatus(self.Name, player.name, player.id, True)
+
+            if player.id >= self.lastId and player.id not in self.Players:
+                pd = PlayerData(player.name, player.id, player.ping)
+                pd.loginTimeUtc = datetime.now(timezone.utc)
+                self.Players[player.id] = pd
+
         if (len(plLeft) > 0):
             self.logger.info(f"{len(players):03}::- " + ', '.join(plLeft))
+        if (len(plJoin) > 0):
+            self.logger.info(f"{len(players):03}::+ " + ', '.join(plJoin))
 
         self.lastId = lastId
         self.oldestId = oldestId
